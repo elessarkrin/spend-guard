@@ -1,0 +1,25 @@
+{
+  "name": "spend-guard",
+  "owner": {
+    "name": "Potter Alvarado",
+    "url": "https://github.com/elessarkrin"
+  },
+  "plugins": [
+    {
+      "name": "spend-guard",
+      "source": "./plugins/spend-guard",
+      "description": "Daily API spend hard stop for Claude Code. Blocks new prompts and tool calls once a configurable daily limit is reached.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Potter Alvarado",
+        "url": "https://github.com/elessarkrin/spend-guard"
+      },
+      "homepage": "https://github.com/elessarkrin/spend-guard",
+      "repository": "https://github.com/elessarkrin/spend-guard",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": ["spend", "budget", "cost", "limit", "guard", "ccusage", "hooks"],
+      "tags": ["cost-control", "safety", "hooks", "skills"]
+    }
+  ]
+}
