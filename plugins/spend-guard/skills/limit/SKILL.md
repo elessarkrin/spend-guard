@@ -37,4 +37,4 @@ printf "Run /spend-guard:status to see current usage against the new limit.\n"
 ' _ "$ARGUMENTS"
 ```
 
-After running, do not add commentary unless the user asks a follow-up question.
+After running, output nothing else — no summary, no rephrasing, no commentary before or after.

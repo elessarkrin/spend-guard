@@ -219,8 +219,8 @@ case "${DECISION}" in
     LIMIT_F="${REST%%|*}"
     REMAINING_F="${REST#*|}"
     {
-      printf '🚫 Daily spend limit reached: $%s / $%s (source: %s)\n' "${SPEND_F}" "${LIMIT_F}" "${SOURCE}"
-      printf '   Remaining: $%s — resets at UTC midnight.\n' "${REMAINING_F}"
+      printf '🚫 Daily spend limit reached: $%s / $%s\n' "${SPEND_F}" "${LIMIT_F}"
+      printf '   Remaining: $%s — resets at local midnight.\n' "${REMAINING_F}"
       printf '   To change limit: /spend-guard:limit <amount>\n'
     } >&2
     exit 2

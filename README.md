@@ -36,6 +36,30 @@ Plugin commands in Claude Code are always namespaced as `/<plugin>:<command>`:
 
 Once installed, no further action is required for enforcement — the hooks run automatically on every prompt and every tool call.
 
+**Status:**
+
+```
+$ /spend-guard:status
+$10.66 spent today, $24.34 remaining of $35.00 limit (30%)
+```
+
+**Change limit:**
+
+```
+$ /spend-guard:limit 50
+spend-guard: daily limit set to $50 (saved to ~/.config/spend-guard/limit)
+Run /spend-guard:status to see current usage against the new limit.
+```
+
+**When the limit is reached:**
+
+```
+UserPromptSubmit operation blocked by hook:
+  [bash ${CLAUDE_PLUGIN_ROOT}/hooks/spend-guard.sh]: 🚫 Daily spend limit reached: $36.70 / $35.00
+     Remaining: $0.00 — resets at local midnight.
+     To change limit: /spend-guard:limit <amount>
+```
+
 ## How it works
 
 spend-guard registers two Claude Code hooks (see `hooks/hooks.json`):
