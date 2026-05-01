@@ -1,13 +1,13 @@
 # spend-guard
 
-A Claude Code plugin that enforces a hard daily API spend limit across every session. When today's spend reaches the configured cap, both new prompts and mid-session tool calls are blocked until UTC midnight. No wrappers, no daemons — everything runs inline through Claude Code's hook lifecycle.
+A Claude Code plugin that enforces a hard daily API spend limit across every session. When today's spend reaches the configured cap, both new prompts and mid-session tool calls are blocked until local midnight. No wrappers, no daemons — everything runs inline through Claude Code's hook lifecycle.
 
 **Limitations**
 
 - **Spend figures are estimates.** Claude Code's JSONL files store raw token counts, not pre-computed costs. spend-guard multiplies tokens by a hardcoded pricing table. If Anthropic changes prices, the table will be stale until the plugin is updated. Install [ccusage](https://github.com/ryoppippi/ccusage) (`npm install -g ccusage`) for more accurate figures — it is used as the primary source when available.
 - **Status is a point-in-time snapshot.** `/spend-guard:status` calculates spend at the moment you invoke it. Tokens consumed in the current turn are not yet written to disk and will not appear until the next invocation.
 - **Fails open.** If spend cannot be determined (Python missing, JSONL unreadable, parse error), the plugin allows the action through rather than locking you out. A broken setup means no enforcement.
-- **UTC day boundary.** The limit resets at UTC midnight, not local midnight.
+- **Pricing table may lag.** The token × price calculation uses a bundled table. Run `/spend-guard:update-cost` to pull the latest prices from Anthropic's docs.
 
 ## Install
 
@@ -32,6 +32,7 @@ Plugin commands in Claude Code are always namespaced as `/<plugin>:<command>`:
 ```
 /spend-guard:status        # show today's spend, configured limit, and remaining budget
 /spend-guard:limit 25      # set the daily limit to $25 (writes ~/.config/spend-guard/limit)
+/spend-guard:update-cost   # fetch latest Anthropic pricing and update the local pricing table
 ```
 
 Once installed, no further action is required for enforcement — the hooks run automatically on every prompt and every tool call.
@@ -89,8 +90,8 @@ The config file holds nothing but the number (e.g. `25.00`). Whitespace is strip
 
 Two strategies, in order:
 
-1. **ccusage (preferred).** Runs `npx --yes ccusage@latest daily --json`, then parses `daily[<today>].totalCost`. ccusage reads the same JSONL files Claude Code writes but handles deduplication and computes cost from token counts using current Anthropic pricing. This is the most accurate option, especially for **API-key users**, where Claude Code does not pre-compute `costUSD` on every record.
-2. **Raw JSONL (fallback).** Walks `~/.claude/projects/**/*.jsonl` plus `~/.claude/statusline.jsonl`, summing `costUSD` / `cost_usd` / `cost` fields whose `timestamp`/`ts` starts with today's UTC date. Used when `npx` or ccusage is unavailable, or when ccusage returns no data.
+1. **ccusage (preferred).** Runs `npx --yes ccusage@latest daily --json` and parses the daily total. Used only when local date matches UTC date — skipped near UTC midnight to avoid cross-day miscounting.
+2. **Raw JSONL (fallback).** Walks `~/.claude/projects/**/*.jsonl` plus `~/.claude/statusline.jsonl`. Claude Code stores raw token counts in `message.usage`, not pre-computed costs — spend-guard multiplies tokens by a bundled pricing table to compute cost. Timestamps are UTC but filtered against **local date** to capture the full local day.
 
 For best accuracy on API-key sessions:
 
