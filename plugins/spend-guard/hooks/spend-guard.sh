@@ -7,9 +7,20 @@ set -u
 # Stay tolerant: never let an unexpected failure block the user (fail-open).
 trap 'exit 0' ERR
 
-# Drain any hook payload from stdin so Claude Code doesn't see a SIGPIPE.
+# Capture hook payload from stdin (needed for bypass checks below).
+HOOK_PAYLOAD=""
 if [ ! -t 0 ]; then
-  cat >/dev/null 2>&1 || true
+  HOOK_PAYLOAD="$(cat 2>/dev/null || true)"
+fi
+
+# ---- 0. Bypass: always allow /spend-guard:limit through ----------------------
+# UserPromptSubmit: let the skill invocation reach Claude.
+# PreToolUse: let the Bash command that writes the limit file execute.
+if printf '%s\n' "${HOOK_PAYLOAD}" | grep -qF 'spend-guard:limit' 2>/dev/null; then
+  exit 0
+fi
+if printf '%s\n' "${HOOK_PAYLOAD}" | grep -qF '.config/spend-guard/limit' 2>/dev/null; then
+  exit 0
 fi
 
 # ---- 1. Resolve limit ---------------------------------------------------------
