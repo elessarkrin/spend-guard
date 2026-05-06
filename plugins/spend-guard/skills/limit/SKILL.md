@@ -1,6 +1,8 @@
 ---
 description: Set the daily Claude Code API spend limit (USD) enforced by the spend-guard plugin. Writes ~/.config/spend-guard/limit. Use when the user wants to change, raise, or lower the daily spend cap.
-allowed-tools: Bash
+model: haiku
+allowed-tools:
+  - Bash
 argument-hint: <amount>
 ---
 
@@ -29,11 +31,10 @@ if [ "${IS_POSITIVE}" != "1" ]; then
 fi
 mkdir -p "${HOME}/.config/spend-guard"
 printf "%s\n" "${AMOUNT}" > "${HOME}/.config/spend-guard/limit"
-printf "spend-guard: daily limit set to \$%s (saved to ~/.config/spend-guard/limit)\n" "${AMOUNT}"
 if [ -n "${CLAUDE_DAILY_LIMIT:-}" ]; then
-  printf "Note: CLAUDE_DAILY_LIMIT=%s is set in this session and overrides the config file.\n" "${CLAUDE_DAILY_LIMIT}"
+  printf "Note: CLAUDE_DAILY_LIMIT=%s overrides the config file for this session.\n" "${CLAUDE_DAILY_LIMIT}"
 fi
-printf "Run /spend-guard:status to see current usage against the new limit.\n"
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/status.sh" 2>/dev/null || printf "Limit set to \$%s.\n" "${AMOUNT}"
 ' _ "$ARGUMENTS"
 ```
 
