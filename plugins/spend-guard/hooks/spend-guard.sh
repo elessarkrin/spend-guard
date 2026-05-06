@@ -7,9 +7,22 @@ set -u
 # Stay tolerant: never let an unexpected failure block the user (fail-open).
 trap 'exit 0' ERR
 
-# Drain any hook payload from stdin so Claude Code doesn't see a SIGPIPE.
+# Capture hook payload from stdin (needed for bypass checks below).
+HOOK_PAYLOAD=""
 if [ ! -t 0 ]; then
-  cat >/dev/null 2>&1 || true
+  HOOK_PAYLOAD="$(cat 2>/dev/null || true)"
+fi
+
+# ---- 0. Bypass: always allow /spend-guard:limit through ----------------------
+# UserPromptSubmit: let the skill invocation reach Claude.
+# PreToolUse: let the Bash command that writes the limit file execute.
+printf '%s' "${HOOK_PAYLOAD}" > "${HOME}/sg-payload.txt" 2>/dev/null || true
+printf 'spend-guard debug: payload written to %s/sg-payload.txt\n' "${HOME}" >&2
+if printf '%s\n' "${HOOK_PAYLOAD}" | grep -qF 'spend-guard:limit' 2>/dev/null; then
+  exit 0
+fi
+if printf '%s\n' "${HOOK_PAYLOAD}" | grep -qF '.config/spend-guard/limit' 2>/dev/null; then
+  exit 0
 fi
 
 # ---- 1. Resolve limit ---------------------------------------------------------
@@ -148,6 +161,7 @@ if os.path.exists(status_path):
     paths.append(status_path)
 total = 0.0
 seen = False
+seen_msg_ids = set()
 for p in paths:
     try:
         with open(p, "r", encoding="utf-8", errors="ignore") as f:
@@ -165,15 +179,20 @@ for p in paths:
                 if not ts_is_local_today(ts):
                     continue
                 # Try pre-computed cost fields first
+                msg = rec.get("message")
+                msg_id = (msg.get("id") if isinstance(msg, dict) else None) or ""
+                if msg_id and msg_id in seen_msg_ids:
+                    continue
                 for k in ("costUSD", "cost_usd", "cost"):
                     v = rec.get(k)
                     if isinstance(v, (int, float)) and v > 0:
                         total += float(v)
                         seen = True
+                        if msg_id:
+                            seen_msg_ids.add(msg_id)
                         break
                 else:
                     # Compute from nested message token counts
-                    msg = rec.get("message")
                     if isinstance(msg, dict) and msg.get("role") == "assistant":
                         usage = msg.get("usage")
                         model = msg.get("model", "")
@@ -181,6 +200,8 @@ for p in paths:
                         if c > 0:
                             total += c
                             seen = True
+                            if msg_id:
+                                seen_msg_ids.add(msg_id)
     except OSError:
         continue
 if seen:
@@ -222,6 +243,7 @@ case "${DECISION}" in
       printf '🚫 Daily spend limit reached: $%s / $%s\n' "${SPEND_F}" "${LIMIT_F}"
       printf '   Remaining: $%s — resets at local midnight.\n' "${REMAINING_F}"
       printf '   To change limit: /spend-guard:limit <amount>\n'
+      printf '   [debug] payload_len=%d payload_start="%s"\n' "${#HOOK_PAYLOAD}" "${HOOK_PAYLOAD:0:80}"
     } >&2
     exit 2
     ;;

@@ -133,6 +133,7 @@ if os.path.exists(status_path):
     paths.append(status_path)
 total = 0.0
 seen = False
+seen_msg_ids = set()
 for p in paths:
     try:
         with open(p, "r", encoding="utf-8", errors="ignore") as f:
@@ -149,19 +150,26 @@ for p in paths:
                 ts = rec.get("timestamp") or rec.get("ts") or ""
                 if not ts_is_local_today(ts):
                     continue
+                msg = rec.get("message")
+                msg_id = (msg.get("id") if isinstance(msg, dict) else None) or ""
+                if msg_id and msg_id in seen_msg_ids:
+                    continue
                 for k in ("costUSD", "cost_usd", "cost"):
                     v = rec.get(k)
                     if isinstance(v, (int, float)) and v > 0:
                         total += float(v)
                         seen = True
+                        if msg_id:
+                            seen_msg_ids.add(msg_id)
                         break
                 else:
-                    msg = rec.get("message")
                     if isinstance(msg, dict) and msg.get("role") == "assistant":
                         c = cost_from_usage(msg.get("model", ""), msg.get("usage"))
                         if c > 0:
                             total += c
                             seen = True
+                            if msg_id:
+                                seen_msg_ids.add(msg_id)
     except OSError:
         continue
 if seen:
