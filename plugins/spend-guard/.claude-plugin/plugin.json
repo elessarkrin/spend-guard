@@ -1,7 +1,7 @@
 {
   "name": "spend-guard",
   "description": "Daily API spend hard stop for Claude Code. Blocks new prompts and tool calls once a configurable daily limit is reached.",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "author": {
     "name": "Potter Alvarado",
     "url": "https://github.com/elessarkrin/spend-guard"
