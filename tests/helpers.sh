@@ -79,4 +79,4 @@ write_record() {
   printf '%s\n' "$record" >> "${FAKE_HOME}/.claude/projects/test-project/session.jsonl"
 }
 
-HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../hooks" && pwd)"
+HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../plugins/spend-guard/hooks" && pwd)"
