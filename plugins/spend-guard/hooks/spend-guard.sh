@@ -16,8 +16,6 @@ fi
 # ---- 0. Bypass: always allow /spend-guard:limit through ----------------------
 # UserPromptSubmit: let the skill invocation reach Claude.
 # PreToolUse: let the Bash command that writes the limit file execute.
-printf '%s' "${HOOK_PAYLOAD}" > "${HOME}/sg-payload.txt" 2>/dev/null || true
-printf 'spend-guard debug: payload written to %s/sg-payload.txt\n' "${HOME}" >&2
 if printf '%s\n' "${HOOK_PAYLOAD}" | grep -qF 'spend-guard:limit' 2>/dev/null; then
   exit 0
 fi
@@ -243,7 +241,6 @@ case "${DECISION}" in
       printf '🚫 Daily spend limit reached: $%s / $%s\n' "${SPEND_F}" "${LIMIT_F}"
       printf '   Remaining: $%s — resets at local midnight.\n' "${REMAINING_F}"
       printf '   To change limit: /spend-guard:limit <amount>\n'
-      printf '   [debug] payload_len=%d payload_start="%s"\n' "${#HOOK_PAYLOAD}" "${HOOK_PAYLOAD:0:80}"
     } >&2
     exit 2
     ;;
